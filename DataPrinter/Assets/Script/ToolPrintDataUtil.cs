@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
@@ -9,6 +9,8 @@ public class ToolPrintDataUtil
     //使用 GetProperties().length 来判断object是否可tostring直接转换string
     //string类型的 Properties.length 不为0 所以需单独判断string类型进行处理
     //array and list 需单独处理
+
+    private static List<int> hashList;
     
     public static ToolPrintData PrintData(object obj)
     {
@@ -20,10 +22,17 @@ public class ToolPrintDataUtil
             return null;
         }
 
+        if (hashList == null)
+        {
+            hashList = new List<int>();
+        }
+        
         ToolPrintData baseData = new ToolPrintData();
 
         RecursionPrintData(baseData, obj);
-
+        
+        hashList.Clear();
+        
         stopwatch.Stop();
 
         return baseData;
@@ -34,6 +43,20 @@ public class ToolPrintDataUtil
     {
         try
         {
+            if (obj != null)
+            {
+                int hash = obj.GetHashCode();
+                if (hash != 0 && hashList.Contains(hash))
+                {
+                    return;
+                }
+
+                if (hash != 0)
+                {
+                    hashList.Add(hash);
+                }
+            }
+
             ToolPrintData childData = new ToolPrintData();
             if (obj != null)
             {
@@ -43,9 +66,9 @@ public class ToolPrintDataUtil
             {
                 childData.content = "null";
             }
-            else if (obj is string)
+            else if (obj is string str)
             {
-                childData.content = (string)obj;
+                childData.content = str;
             }
             else if (obj.GetType().IsArray)
             {
@@ -78,7 +101,7 @@ public class ToolPrintDataUtil
                     }
                 }
             }
-
+            
             parentData.childDataList.Add(childData);
         }
         catch (Exception e)
@@ -95,13 +118,46 @@ public class ToolPrintDataUtil
             ToolPrintData childData = new ToolPrintData();
             childData.name = info.Name;
 
-            if (obj == null || info == null)
+            bool hasAdd = false;
+            //处理unity类型
+            if (!(obj is string) && !obj.GetType().IsArray && (!obj.GetType().IsGenericType || obj.GetType().GetGenericTypeDefinition() != typeof(List<>)))
+            {
+                if (info.PropertyType.BaseType.FullName == "System.ValueType")
+                {
+                    childData.content = info.GetValue(obj).ToString();
+                    hasAdd = true;
+                }
+                else if (info.PropertyType.FullName == "UnityEngine.Component")
+                {
+                    childData.content = info.GetType().ToString();
+                    hasAdd = true;
+                }
+                else
+                {
+                    object o = info.GetValue(obj);
+                    if (o != null)
+                    {
+                        int hash = o.GetHashCode();
+                        if (hashList.Contains(hash))
+                        {
+                            return;
+                        }
+                        hashList.Add(hash);
+                    }
+                }
+            }
+
+            if (hasAdd)
+            {
+                
+            }
+            else if (obj == null || info == null)
             {
                 childData.content = "null";
             }
-            else if (obj is string)
+            else if (obj is string str)
             {
-                childData.content = (string)obj;
+                childData.content = str;
             }
             else if (obj.GetType().IsArray)
             {
@@ -151,6 +207,16 @@ public class ToolPrintDataUtil
             Console.WriteLine(e);
             throw;
         }
+    }
+
+    private string CheckConvertStr(object obj)
+    {
+        if (obj is String str)
+        {
+            return str;
+        }
+        // else if
+        return null;
     }
 }
 
