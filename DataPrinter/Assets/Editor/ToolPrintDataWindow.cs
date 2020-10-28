@@ -123,11 +123,9 @@ public class ToolPrintDataWindow : EditorWindow
             //SetData(ToolPrintDataUtil.PrintData(obj));
         }
 
-        GUILayout.BeginScrollView(Vector2.zero, GUILayout.Width(position.width), GUILayout.Height(position.height));
         if (_canShow)
         {
-            treeView.OnGUI(new Rect(0, 0, position.width, position.height));
+            treeView.OnGUI(new Rect(0, 150, position.width, 150));
         }
-        GUILayout.EndScrollView();
     }
 }
