@@ -29,7 +29,7 @@ public class ToolPrintDataUtil
         Debug.Log("print data success time is " + stopwatch.Elapsed.TotalMilliseconds + "ms");
         return baseData;
     }
-
+ 
     private static void RecursionPrintData(ToolPrintData parentData, object obj, string name = null)
     {
         try
