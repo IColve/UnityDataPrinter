@@ -7,10 +7,13 @@ using UnityEngine;
 public class ToolPrintDataUtil
 {
     private static List<int> instIdList = new List<int>();
-
+    private static Dictionary<Type, List<object>> instObjList = new Dictionary<Type, List<object>>();
+    
+    
     public static ToolPrintData PrintData(object obj)
     {
         instIdList.Clear();
+        instObjList.Clear();
 
         System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
         stopwatch.Start(); // 性能监测开始
@@ -27,15 +30,19 @@ public class ToolPrintDataUtil
         stopwatch.Stop();
 
         Debug.Log("print data success time is " + stopwatch.Elapsed.TotalMilliseconds + "ms");
+        instObjList.Clear();
+        instIdList.Clear();
         return baseData;
     }
- 
+
     private static void RecursionPrintData(ToolPrintData parentData, object obj, string name = null)
     {
+        if (obj == null)
+        {
+            return;
+        }
         try
         {
-            Debug.Log(obj.GetType());
-
             if (obj is Transform tran)
             {
                 if (instIdList.Contains(tran.GetInstanceID()))
@@ -145,7 +152,10 @@ public class ToolPrintDataUtil
                 {
                     for (int i = 0; i < infos.Length; i++)
                     {
-                        RecursionPropertyInfo(infos[i], obj, childData);
+                        // if (infos[i].PropertyType.ToString() != "UnityEngine.GameObject" && infos[i].PropertyType.ToString() != "UnityEngine.Transform")
+                        {
+                            RecursionPropertyInfo(infos[i], obj, childData);
+                        }
                     }
                 }
 
@@ -163,17 +173,21 @@ public class ToolPrintDataUtil
                 {
                     for (int i = 0; i < components.Length; i++)
                     {
-                        RecursionPrintData(childData, components[i], components[i].GetType().ToString());
+                        RecursionPrintData(childData, components[i], "Mono_" + components[i].GetType());
                     }
                 }
 
                 if (obj is MonoBehaviour)
                 {
-                    FieldInfo[] fileInfos = obj.GetType().GetFields();
+                    PropertyInfo[] fileInfos = obj.GetType().GetProperties();
                     for (int i = 0; i < fileInfos.Length; i++)
                     {
                         try
                         {
+                            if (fileInfos[i].DeclaringType?.BaseType?.Name == "MonoBehaviour" || fileInfos[i].DeclaringType?.Name == "Component")
+                            {
+                                continue;
+                            }
                             object o = fileInfos[i].GetValue(obj);
                             
                             if (o == null)
@@ -201,25 +215,50 @@ public class ToolPrintDataUtil
         }
         catch (Exception e)
         {
-            Debug.Log("转换失败");
+            Debug.LogError("转换数据");
             throw;
         }
     }
 
     private static void RecursionPropertyInfo(PropertyInfo info, object obj, ToolPrintData childData)
     {
-        try
+        if (obj.Equals(null))
         {
-            if (!info.CanRead)
+            return;
+        }
+
+        if (instObjList.ContainsKey(obj.GetType()))
+        {
+            if (instObjList[obj.GetType()].Contains(obj))
             {
                 return;
             }
+            else
+            {
+                instObjList[obj.GetType()].Add(obj);
+            }
+        }
+        else
+        {
+            instObjList[obj.GetType()] = new List<object>(){obj};
+        }
+        
+        try
+        {
+            // if (!info.CanRead)
+            // {
+            //     return;
+            // }
 
             if (info.PropertyType.ToString() == "UnityEngine.Component")
             {
                 return;
             }
 
+            if (obj.Equals(null))
+            {
+                Debug.LogError("????????????");
+            }
             object childObj = info.GetValue(obj);
 
             if (info.PropertyType.BaseType.FullName == "System.ValueType")
@@ -246,7 +285,7 @@ public class ToolPrintDataUtil
         }
         catch (Exception e)
         {
-            Debug.LogError(info.PropertyType + " Error");
+            Debug.LogError(info.PropertyType + " Error " + info.Name);
             throw;
         }
     }
