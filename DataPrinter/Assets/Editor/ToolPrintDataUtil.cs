@@ -179,15 +179,21 @@ public class ToolPrintDataUtil
 
                 if (obj is MonoBehaviour)
                 {
-                    PropertyInfo[] fileInfos = obj.GetType().GetProperties();
+                    FieldInfo[] fileInfos = obj.GetType().GetFields();
                     for (int i = 0; i < fileInfos.Length; i++)
                     {
                         try
                         {
-                            if (fileInfos[i].DeclaringType?.BaseType?.Name == "MonoBehaviour" || fileInfos[i].DeclaringType?.Name == "Component")
+                            if (fileInfos[i].FieldType?.BaseType?.FullName == "UnityEngine.Object" || fileInfos[i].DeclaringType?.Name == "Component")
                             {
                                 continue;
                             }
+
+                            if (fileInfos[i].FieldType.IsArray)
+                            {
+                                continue;
+                            }
+                            
                             object o = fileInfos[i].GetValue(obj);
                             
                             if (o == null)
