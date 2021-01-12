@@ -78,7 +78,6 @@ public class ToolPrintDataUtil
         }
         else if (obj.GetType().IsEnum)
         {
-            return;
             childData.content = obj.ToString();
         }
         else if (obj is Vector3 || obj is Vector4 || obj is Vector2 || obj is Quaternion)
